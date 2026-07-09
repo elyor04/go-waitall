@@ -29,10 +29,14 @@ type Result[T any] struct {
 // or once the parent context passed to WaitAll is done. Fn should
 // respect ctx.Done() to stop promptly: Go cannot forcibly stop a running
 // goroutine, so an Fn that ignores cancellation keeps running in the
-// background even after WaitAll has reported its result as aborted.
+// background even after WaitAll has reported its result as aborted. This
+// includes any eventual panic: it is still recovered (so it can't crash
+// the program), but since nothing is listening for it anymore, it is
+// silently discarded rather than surfaced as Result.Err.
 //
-// If Fn panics, the panic is recovered and returned as Result.Err (with
-// a stack trace) instead of crashing the program.
+// If Fn panics before Timeout or ctx expire, the panic is recovered and
+// returned as Result.Err (with a stack trace) instead of crashing the
+// program.
 type Task[T any] struct {
 	Fn      func(ctx context.Context) (T, error)
 	Timeout time.Duration // <= 0 disables the per-task timeout
@@ -61,6 +65,10 @@ func WaitAll[T any](ctx context.Context, tasks ...Task[T]) []Result[T] {
 func runTask[T any](parent context.Context, task Task[T]) Result[T] {
 	if task.Fn == nil {
 		return Result[T]{Err: errors.New("waitall: nil task function")}
+	}
+
+	if err := parent.Err(); err != nil {
+		return Result[T]{Err: fmt.Errorf("%w: %w", ErrAborted, err)}
 	}
 
 	ctx := parent

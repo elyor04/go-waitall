@@ -97,6 +97,26 @@ func TestWaitAll_ParentCancellation(t *testing.T) {
 	}
 }
 
+func TestWaitAll_AlreadyDoneContextShortCircuits(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	called := false
+	results := WaitAll(ctx, Task[int]{
+		Fn: func(ctx context.Context) (int, error) {
+			called = true
+			return 0, nil
+		},
+	})
+
+	if called {
+		t.Error("Fn was called for an already-done parent context, want it skipped entirely")
+	}
+	if !errors.Is(results[0].Err, context.Canceled) {
+		t.Errorf("Err = %v, want errors.Is match for context.Canceled", results[0].Err)
+	}
+}
+
 func TestWaitAll_PanicIsRecovered(t *testing.T) {
 	results := WaitAll(context.Background(), Task[int]{
 		Fn: func(ctx context.Context) (int, error) { panic("kaboom") },
