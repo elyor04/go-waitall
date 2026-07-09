@@ -46,6 +46,9 @@ type Task[T any] struct {
 // out, and returns results in the same order as tasks. Cancelling ctx
 // aborts waiting on every task at once (e.g. for shutdown or signal
 // handling); pass context.Background() if no such cancellation is needed.
+//
+// If ctx is already done when WaitAll is called, tasks are not started
+// at all: each simply gets a Result.Err wrapping ErrAborted.
 func WaitAll[T any](ctx context.Context, tasks ...Task[T]) []Result[T] {
 	results := make([]Result[T], len(tasks))
 	var wg sync.WaitGroup

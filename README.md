@@ -55,7 +55,14 @@ errors.Is(err, context.DeadlineExceeded)
 
 Note: cancellation is cooperative. Go cannot forcibly stop a running
 goroutine — a `Fn` that ignores `ctx.Done()` keeps running in the
-background even after `WaitAll` reports its result as aborted.
+background even after `WaitAll` reports its result as aborted. This
+includes an eventual panic in that abandoned call: it's recovered (so it
+can't crash the program) but silently discarded, since nothing is
+listening for it anymore.
+
+If `ctx` is already done when `WaitAll` is called, tasks are not started
+at all — each task's `Fn` is skipped entirely and its `Result.Err` wraps
+`ErrAborted` immediately.
 
 ## License
 
