@@ -123,6 +123,9 @@ func TestWaitAll_PanicIsRecovered(t *testing.T) {
 	})
 
 	err := results[0].Err
+	if !errors.Is(err, ErrPanicked) {
+		t.Errorf("Err = %v, want errors.Is match for ErrPanicked", err)
+	}
 	if err == nil || !strings.Contains(err.Error(), "kaboom") {
 		t.Fatalf("Err = %v, want an error mentioning the panic value", err)
 	}
@@ -131,7 +134,7 @@ func TestWaitAll_PanicIsRecovered(t *testing.T) {
 func TestWaitAll_NilFn(t *testing.T) {
 	results := WaitAll(context.Background(), Task[int]{})
 
-	if results[0].Err == nil {
-		t.Fatal("expected an error for nil Fn, got nil")
+	if !errors.Is(results[0].Err, ErrNilFn) {
+		t.Fatalf("Err = %v, want errors.Is match for ErrNilFn", results[0].Err)
 	}
 }

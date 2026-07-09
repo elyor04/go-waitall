@@ -18,6 +18,13 @@ import (
 // the two cases apart.
 var ErrAborted = errors.New("waitall: task aborted")
 
+// ErrNilFn indicates a Task was run with a nil Fn.
+var ErrNilFn = errors.New("waitall: nil task function")
+
+// ErrPanicked indicates a Task's Fn panicked. The returned error also
+// includes the recovered panic value and a stack trace in its message.
+var ErrPanicked = errors.New("waitall: task panicked")
+
 type Result[T any] struct {
 	Value T
 	Err   error
@@ -35,8 +42,8 @@ type Result[T any] struct {
 // silently discarded rather than surfaced as Result.Err.
 //
 // If Fn panics before Timeout or ctx expire, the panic is recovered and
-// returned as Result.Err (with a stack trace) instead of crashing the
-// program.
+// returned as a Result.Err wrapping ErrPanicked (with a stack trace)
+// instead of crashing the program.
 type Task[T any] struct {
 	Fn      func(ctx context.Context) (T, error)
 	Timeout time.Duration // <= 0 disables the per-task timeout
@@ -67,7 +74,7 @@ func WaitAll[T any](ctx context.Context, tasks ...Task[T]) []Result[T] {
 
 func runTask[T any](parent context.Context, task Task[T]) Result[T] {
 	if task.Fn == nil {
-		return Result[T]{Err: errors.New("waitall: nil task function")}
+		return Result[T]{Err: ErrNilFn}
 	}
 
 	if err := parent.Err(); err != nil {
@@ -85,7 +92,7 @@ func runTask[T any](parent context.Context, task Task[T]) Result[T] {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				done <- Result[T]{Err: fmt.Errorf("task panicked: %v\n%s", r, debug.Stack())}
+				done <- Result[T]{Err: fmt.Errorf("%w: %v\n%s", ErrPanicked, r, debug.Stack())}
 			}
 		}()
 		v, err := task.Fn(ctx)

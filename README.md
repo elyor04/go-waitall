@@ -64,6 +64,11 @@ If `ctx` is already done when `WaitAll` is called, tasks are not started
 at all — each task's `Fn` is skipped entirely and its `Result.Err` wraps
 `ErrAborted` immediately.
 
+A `Task` with a nil `Fn` returns `waitall.ErrNilFn` as its `Result.Err`
+instead of panicking. If `Fn` itself panics, the panic is recovered and
+`Result.Err` wraps `waitall.ErrPanicked` (with the recovered value and a
+stack trace in the message) instead of crashing the program.
+
 ## License
 
 MIT
