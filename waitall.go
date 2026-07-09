@@ -12,11 +12,11 @@ import (
 	"time"
 )
 
-// ErrTimeout indicates a task did not complete before its own timeout or
+// ErrAborted indicates a task did not complete before its own timeout or
 // before the ctx passed to WaitAll was done. Check errors.Is(err,
 // context.DeadlineExceeded) or errors.Is(err, context.Canceled) to tell
 // the two cases apart.
-var ErrTimeout = errors.New("waitall: task timed out")
+var ErrAborted = errors.New("waitall: task aborted")
 
 type Result[T any] struct {
 	Value T
@@ -29,7 +29,7 @@ type Result[T any] struct {
 // or once the parent context passed to WaitAll is done. Fn should
 // respect ctx.Done() to stop promptly: Go cannot forcibly stop a running
 // goroutine, so an Fn that ignores cancellation keeps running in the
-// background even after WaitAll has reported its result as timed out.
+// background even after WaitAll has reported its result as aborted.
 //
 // If Fn panics, the panic is recovered and returned as Result.Err (with
 // a stack trace) instead of crashing the program.
@@ -85,6 +85,6 @@ func runTask[T any](parent context.Context, task Task[T]) Result[T] {
 	case res := <-done:
 		return res
 	case <-ctx.Done():
-		return Result[T]{Err: fmt.Errorf("%w: %w", ErrTimeout, ctx.Err())}
+		return Result[T]{Err: fmt.Errorf("%w: %w", ErrAborted, ctx.Err())}
 	}
 }

@@ -44,18 +44,18 @@ func main() {
 
 Results are returned in the same order as the input tasks. If a task
 doesn't finish before its `Timeout` (or before the `ctx` passed to
-`WaitAll` is done), its `Result.Err` wraps `waitall.ErrTimeout` alongside
+`WaitAll` is done), its `Result.Err` wraps `waitall.ErrAborted` alongside
 the underlying `context.DeadlineExceeded` / `context.Canceled`, so you
 can check either:
 
 ```go
-errors.Is(err, waitall.ErrTimeout)
+errors.Is(err, waitall.ErrAborted)
 errors.Is(err, context.DeadlineExceeded)
 ```
 
 Note: cancellation is cooperative. Go cannot forcibly stop a running
 goroutine — a `Fn` that ignores `ctx.Done()` keeps running in the
-background even after `WaitAll` reports its result as timed out.
+background even after `WaitAll` reports its result as aborted.
 
 ## License
 

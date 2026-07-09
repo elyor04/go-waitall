@@ -72,8 +72,8 @@ func TestWaitAll_PerTaskTimeout(t *testing.T) {
 	})
 
 	err := results[0].Err
-	if !errors.Is(err, ErrTimeout) {
-		t.Errorf("Err = %v, want errors.Is match for ErrTimeout", err)
+	if !errors.Is(err, ErrAborted) {
+		t.Errorf("Err = %v, want errors.Is match for ErrAborted", err)
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("Err = %v, want errors.Is match for context.DeadlineExceeded", err)
